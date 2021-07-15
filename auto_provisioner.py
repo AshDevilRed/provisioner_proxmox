@@ -189,8 +189,8 @@ def clone_vm():
                 except:
                     print(f"{red}Création de la VM ",vm_id,f" échouée ...{bold}")
                     exit()
-                ip=str(ipaddress.ip_address(ip)+1)
                 print(ip)
+                ip=str(ipaddress.ip_address(ip)+1)
                 vm_id=int(vm_id)+1
             print("")
 

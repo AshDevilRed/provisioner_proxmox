@@ -9,7 +9,7 @@ pve_ssh_key=
 
 # Saisir les informations propre à la configuration des VM
 [config]
-os_clone=centos
+os_clone=debian
 size=32
 memory_size=2048
 gateway=172.16.0.1
@@ -21,15 +21,14 @@ suivi=oui
 [debian-dbserv]
 vmid=200
 ip=172.16.1.152
-nb_vm=2
-
+nb_vm=3
 
 [debian-webserv]
-vmid=204
+vmid=203
 ip=172.16.1.155
-nb_vm=1
+nb_vm=2
 
-[debian-ha]
+[debian-ansible]
 vmid=205
-ip=172.16.1.156
+ip=172.16.1.157
 nb_vm=1

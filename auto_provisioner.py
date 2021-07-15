@@ -7,7 +7,7 @@
 # Copyright (C) 2021 Samuel Kervella
 
 import os, sys, time, getopt
-import re, mmap
+import re, mmap, ipaddress
 import requests
 from configparser import ConfigParser as ConfP
 from proxmoxer import ProxmoxAPI as Prox
@@ -189,6 +189,8 @@ def clone_vm():
                 except:
                     print(f"{red}Création de la VM ",vm_id,f" échouée ...{bold}")
                     exit()
+                ip=str(ipaddress.ip_address(ip)+1)
+                print(ip)
                 vm_id=int(vm_id)+1
             print("")
 

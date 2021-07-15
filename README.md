@@ -4,6 +4,8 @@ Scripts python et Shell qui permettent d'approvisioner un serveur Proxmox : (via
 - Suppression de VM
 - Snapshot
 - Rollback d'un snapshot
+- Status de l'hyperviseur
+- Liste des VM (ID / Nom / Etat)
 
 ## Python Script - auto_provisioner.py
 Prérequis : 

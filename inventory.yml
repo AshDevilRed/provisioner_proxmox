@@ -1,0 +1,35 @@
+# Saisir les informations propre à l'hyperviseur
+[proxmox] 
+pve_user=root
+pve_host=172.16.1.2
+pve_port=8006
+pve_node=proxmox2
+pve_pass=votre_pass
+pve_ssh_key=
+
+# Saisir les informations propre à la configuration des VM
+[config]
+os_clone=centos
+size=32
+memory_size=2048
+gateway=172.16.0.1
+ciuser=ansible
+cipassword=ansible
+suivi=oui
+
+# Saisir le [nom du groupe], l'id de la première VM, son IP et le nombre de VM voulu pour chaque groupes
+[debian-dbserv]
+vmid=200
+ip=172.16.1.152
+nb_vm=2
+
+
+[debian-webserv]
+vmid=204
+ip=172.16.1.155
+nb_vm=1
+
+[debian-ha]
+vmid=205
+ip=172.16.1.156
+nb_vm=1

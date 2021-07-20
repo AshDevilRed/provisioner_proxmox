@@ -4,3 +4,5 @@ csrfp
 .id_rsa.pub
 .id_rsa_encod.pub
 id_rsa.pub
+test_inventory.yml
+inventory.yml

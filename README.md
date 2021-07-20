@@ -27,6 +27,12 @@ Step 2 :
 - Pensez à bien backslasher les caractères spéciaux
 ```
 
+Step 3 :
+```
+- Lancer .auto_provisioner.py
+- Et choisir la fonction souhaité
+```
+
 ## Bash Script 
 Prérequis : 
 - gridsite-clients

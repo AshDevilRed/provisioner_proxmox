@@ -12,7 +12,7 @@ Prérequis :
 - python3
 - proxmoxer https://github.com/proxmoxer/proxmoxer
 
-Step 1 :
+Step 1 : https://github.com/AshDevilRed/provisioner_proxmox/blob/main/inventory.yml
 ```
 - Créer un fichier d'inventaire (par défaut inventory.yml)
 - Les variables du proxmox : ip / user / port / node 

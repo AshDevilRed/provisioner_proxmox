@@ -32,6 +32,8 @@ Step 3 :
 - Lancer .auto_provisioner.py
 - Et choisir la fonction souhaité
 ```
+![image](https://user-images.githubusercontent.com/71751138/126310900-a215baac-b0e7-4159-84e4-b37834067bc0.png)
+
 
 ## Bash Script 
 Prérequis : 

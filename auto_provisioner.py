@@ -3,6 +3,7 @@
 # pensez à bien backslasher les char spéciaux $
 # Prérequis : proxmoxer
 # Un fichier inventory.yml doit être fournit en ini (le nom ou le path peut être changer ligne 18 ou via l'option -i
+# L'option -c suivi d'un chiffre entre 1 et 9 permet de choisir directement la fonction à appeler
 # Code couleur en Output : Vert en cas de création (clone/snap) / Jaune en cas de changement (rollback/destroy) / Rouge en cas d'erreur (exception)
 # Copyright (C) 2021 Samuel Kervella
 
@@ -15,16 +16,21 @@ from shutil import copy2 as cp
 import json, urllib
 import pprint
 
+# Création de la variable choix
+choix=0
+
 # Chemin par défaut du fichier d'inventaire
 inventory="inventory.yml"
 conf = ConfP(allow_no_value=True)
 
 # Récupération des arguments du script / Accepte seulement -i suivi d'un Path
 try:
-    options, remainder = getopt.getopt(sys.argv[1:], 'i:')
+    options, remainder = getopt.getopt(sys.argv[1:], 'i:c:')
     for opt, arg in options:
         if opt in ('-i'):
             inventory=arg
+        elif opt in ('-c'):
+            choix=arg
 except:
     print("Argument incorrect ! \nEx : [ -i inventory.yml ]")
 
@@ -68,8 +74,15 @@ memory_size=conf.get('config','memory_size')
 gateway=conf.get('config','gateway')
 ciuser=conf.get('config','ciuser')
 cipassword=conf.get('config','cipassword')
-suivi=conf.get('config','suivi')
+#suivi=conf.get('config','suivi') # non utilisé en python
 os_clone=conf.get('config','os_clone')
+try:
+    proprietaire=conf.get('config','proprietaire')
+    pole=conf.get('config','pole')
+    description="Propriétaire : "+proprietaire+"\nPôle : "+pole
+except:
+    proprietaire=os.environ['USER']
+    description="Propriétaire : "+proprietaire+"\nPôle : Non renseigné"
 group_name=[]
 
 # Tableau de couleurs
@@ -111,8 +124,36 @@ def search():
 # Affiche les différentes informations sur le node Proxmox
 def show_proxmox_stats():
     json_data=proxmox.nodes(pve_node).status.get()
-    pprint.pprint(json_data)
+    total_mem=json_data['memory']['total']
+    used_mem=json_data['memory']['used']
+    percent_mem=used_mem/total_mem*100
     
+    data_disk=proxmox.nodes(pve_node).storage('virtual_machines').status.get()
+    total_data=data_disk['total']
+    used_data=data_disk['used']
+    percent_data=used_data/total_data*100
+    if percent_mem >= 95:
+        print(f"{red}Mémoire utilisée : {round(percent_mem,2)} % {NC}")
+    elif percent_mem >= 80:
+        print(f"{yellow}Mémoire utilisée : {round(percent_mem,2)} % {NC}")
+    else:
+        print(f"{green}Mémoire utilisée : {round(percent_mem,2)} % {NC}")
+    if percent_data >= 90:
+        print(f"{red}Stockage utilisé : {round(percent_data,2)} % {NC}")
+    elif percent_data >= 80:
+        print(f"{yellow}Stockage utilisé : {round(percent_data,2)} % {NC}")
+    else:
+        print(f"{green}Stockage utilisé : {round(percent_data,2)} % {NC}")
+
+    count_vm=show_all_vm(0)
+    print(f"{bold}Nombre de VM : {count_vm}")
+
+    vers_prox=proxmox.nodes(pve_node).version.get()
+    print(f"Version de proxmox : {under}{vers_prox['version']}{NU}\n")
+
+    #list_users=proxmox.access.users.get()
+    #print(f"{list_users}")
+
 # Affiche les VM de notre inventaire (ID / Nom / Etat)
 def show_vm():
     search()
@@ -137,18 +178,40 @@ def show_vm():
                 else:
                     print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {red}{vm['status']}{NC}")
 
+        for vm in proxmox.nodes(node['node']).lxc.get():
+            if vm['vmid'] in vmid_list:
+                if vm['status'] == "running":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {green}{vm['status']}{NC}")
+                elif vm['status'] == "stopped":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {yellow}{vm['status']}{NC}")
+                else:
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {red}{vm['status']}{NC}")
+
 # Affiche toutes les VM du node (ID / Nom / Etat)
 # ATTENTION : Ne pas utiliser si il y à trop de VM sur Proxmox
-def show_all_vm():
+def show_all_vm(show=1):
+    count=0
     for node in proxmox.nodes.get():
         for vm in proxmox.nodes(node['node']).qemu.get():
-            if vm['status'] == "running":
-                print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {green}{vm['status']}{NC}")
-            elif vm['status'] == "stopped":
-                print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {yellow}{vm['status']}{NC}")
-            else:
-                print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {red}{vm['status']}{NC}")
-
+            if show == 1:
+                if vm['status'] == "running":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {green}{vm['status']}{NC}")
+                elif vm['status'] == "stopped":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {yellow}{vm['status']}{NC}")
+                else:
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {red}{vm['status']}{NC}")
+            count=count+1
+        for vm in proxmox.nodes(node['node']).lxc.get():
+            if show == 1:
+                if vm['status'] == "running":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {green}{vm['status']}{NC}")
+                elif vm['status'] == "stopped":
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {yellow}{vm['status']}{NC}")
+                else:
+                    print(f"{bold}{vm['vmid']}{NC}. {vm['name']} => {red}{vm['status']}{NC}")
+            count=count+1
+    return count
+    
 # Créer des clones de l'OS choisi dans l'inventaire
 def clone_vm():
     global os_clone
@@ -215,7 +278,7 @@ def clone_vm():
                         proxmox.nodes(pve_node).qemu(os_clone).clone.create(newid=vm_id,name=name,target=pve_node,full=1)
                         print(f"{green}Clone ",vm_id,": ",name)
                         ipconf='ip='+ip+'/23,gw='+gateway
-                        proxmox.nodes(pve_node).qemu(vm_id).config.create(ciuser=ciuser,cipassword=cipassword,memory=memory_size,ipconfig0=ipconf,sshkeys=ssh_key)
+                        proxmox.nodes(pve_node).qemu(vm_id).config.create(ciuser=ciuser,cipassword=cipassword,memory=memory_size,ipconfig0=ipconf,sshkeys=ssh_key,description=description)
                         print("Fichier cloud-init du clone ",vm_id," configuré ...")
                         try:
                             proxmox.nodes(pve_node).qemu(vm_id).resize.set(disk='scsi0',size=size)
@@ -334,8 +397,10 @@ def rollback():
             print(f"{yellow}ID :",int(vm_id),f"{bold}")
             vm_id=int(vm_id)+1
             
-
-    print("\nVeuillez saisir le nom du snapshot à rollback : ",end=f"{yellow}");snapname=input();print(f"{bold}")
+    print("")
+    snap_list=list_snap(1)
+    
+    print(f"\n{bold}Veuillez saisir le nom du snapshot à rollback : ",end=f"{yellow}");snapname=input();print(f"{bold}")
     
     print("Etes vous sûre ? : [N]/o ",end=f"{yellow}");sure=input();print(f"{bold}")
     
@@ -368,6 +433,7 @@ def list_ip(test):
     ip_list=[]
 
     for node in proxmox.nodes.get():
+        # Boucle sur les VM QEMU
         for vm in proxmox.nodes(node['node']).qemu.get():
             try:
                 vm_ip=proxmox.nodes(node['node']).qemu(vm['vmid']).agent('network-get-interfaces').get()
@@ -376,39 +442,94 @@ def list_ip(test):
                 if test == 0:
                     print(f"VM ({bold}",vm['vmid'],f"{NC}) :{yellow}",ip,f"{NC}")
             except:
-                if test == 0:
-                    print("No QEMU agent")
+                if test == 0 and int(vm['vmid']) not in range(7999,8010):
+                    print("No QEMU agent ( vm",vm['vmid'],")")
                 ip=""
+        # Boucle sur les container LXC
+        for vm in proxmox.nodes(node['node']).lxc.get():
+            try:
+                vm_ip=proxmox.nodes(node['node']).lxc(vm['vmid']).config.get()
+                vm_ip=vm_ip['net0']
+                vm_ip=re.search("(?<=ip=)(.*)",vm_ip)
+                vm_ip=vm_ip[0].split('/')[0]
+                ip_list.append(ip)
+                if test == 0:
+                    print(f"VM ({bold}",vm['vmid'],f"{NC}) :{yellow}",vm_ip,f"{NC}")
+            except:
+                pass
            
     return ip_list
 
-if __name__ == "__main__":
-    print(f"{bold}MENU :")
-    print("Que souhaitez vous faire?")
-    print(f'{under}1{NU}. Afficher l\'état de proxmox')
-    print(f"{under}2{NU}. Afficher toutes les VM")
-    print(f"{under}3{NU}. Afficher les VM de notre inventaire")
-    print(f"{under}4{NU}. Liste des IP utilisées")
-    print(f"{under}5{NU}. Cloner une ou plusieurs VM")
-    print(f"{under}6{NU}. Supprimer une ou plusieurs VM")
-    print(f"{under}7{NU}. Snapshot d'une ou plusieurs VM")
-    print(f"{under}8{NU}. Rollback d'une ou plusieurs VM\n")
+def list_snap(show):
+    search()
+    count_group=len(group_name)
+    snap_list=[]
 
-    print("Choix : ",end =f"{yellow}");choix=input();print(f"{NC}")
+    vm_id=conf.get(group_name[0],'vmid')
+    try: 
+        for snap in proxmox.nodes(pve_node).qemu(vm_id).snapshot.get():
+            snap_list.append(snap['name'])
+    
+        if show:
+            print(f"{bold}Liste des snapshot disponibles :")
+            for s in snap_list:
+                if s == "current":
+                    pass
+                else:
+                    print(f"{bold}-{yellow} ",s,f"{NC}")
+    except:
+        if show:
+            print(f"{bold}Pas de snapshot disponibles !{NC}")
+            exit()
+
+    return snap_list
+    
+
+
+
+if __name__ == "__main__":
+    
+    if choix == 0:
+        print(f"{bold}MENU :")
+        print("Que souhaitez vous faire?")
+        print(f'{under}1{NU}. Afficher l\'état de proxmox')
+        print(f"{under}2{NU}. Afficher toutes les VM")
+        print(f"{under}3{NU}. Afficher les VM de notre inventaire")
+        print(f"{under}4{NU}. Liste des IP utilisées")
+        print(f"{under}5{NU}. Cloner une ou plusieurs VM")
+        print(f"{under}6{NU}. Supprimer une ou plusieurs VM")
+        print(f"{under}7{NU}. Snapshot d'une ou plusieurs VM")
+        print(f"{under}8{NU}. Rollback d'une ou plusieurs VM")
+        print(f"{under}9{NU}. Liste des snapshots disponible\n")
+
+        print("Choix : ",end =f"{yellow}");choix=input();print(f"{NC}")
 
     if choix == "1":
+        print(f"{bold}Affichage de l'état de proxmox :\n")
         show_proxmox_stats()
     elif choix == "2":
+        print(f"{bold}Affichage de toutes les VM :\n")
         show_all_vm()
     elif choix == "3":
+        print(f"{bold}Affichage des VM de l'inventaire :\n")
         show_vm()
     elif choix == "4":
+        print(f"{bold}Affichage des IP utilisées :\n")
         list_ip(0)
     elif choix == "5":
+        print(f"{bold}Création des VM de l'inventaire (Clone) :\n")
         clone_vm()
     elif choix == "6":
+        print(f"{bold}Suppression de toutes les VM de l'inventaire :\n")
         destroy_vm()
     elif choix == "7":
+        print(f"{bold}Snapshot de toutes les VM de l'inventaire :\n")
         snapshot()
     elif choix == "8":
+        print(f"{bold}Rollback de toutes les VM de l'inventaire :\n")
         rollback()
+    elif choix == "9":
+        print(f"{bold}Affichage de la liste des Snapshot disponibles :\n")
+        list_snap(1)
+    else:
+        exit()

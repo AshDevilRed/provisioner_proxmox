@@ -6,3 +6,4 @@ csrfp
 id_rsa.pub
 test_inventory.yml
 inventory.yml
+rundeck_inv.yml

@@ -15,7 +15,7 @@ Prérequis :
 - python3
 - proxmoxer https://github.com/proxmoxer/proxmoxer
 
-Step 1 :
+Step 1 : https://github.com/AshDevilRed/provisioner_proxmox/blob/main/inventory.yml
 ```
 - Créer un fichier d'inventaire (par défaut inventory.yml)
 - Les variables du proxmox : ip / user / port / node 
@@ -29,6 +29,14 @@ Step 2 :
   export pve_pass="votre_pass"
 - Pensez à bien backslasher les caractères spéciaux
 ```
+
+Step 3 :
+```
+- Lancer .auto_provisioner.py
+- Et choisir la fonction souhaité
+```
+![image](https://user-images.githubusercontent.com/71751138/126310900-a215baac-b0e7-4159-84e4-b37834067bc0.png)
+
 
 ## Bash Script 
 Prérequis : 

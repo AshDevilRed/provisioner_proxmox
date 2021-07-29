@@ -53,4 +53,4 @@ Suivre les mêmes étapes que pour le script Python !
 
 A la différence des deux autres script celui-ci demande une saisie utilisateur au lieu d'un fichier d'inventaire.
 
-
+...

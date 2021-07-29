@@ -16,3 +16,4 @@ Fonctions :
 9. Liste des snapshots disponibles
 
 Code couleur en Output : Vert en cas de création (clone/snap) / Jaune en cas de changement (rollback/destroy) / Rouge en cas d'erreur (exception)
+
